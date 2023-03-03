@@ -37,6 +37,10 @@ Preferences preferences;
 #define Motor3_stp 26 
 #define Motor3_dir 25
 
+//Define Pins for Motor 4
+#define Motor4_stp 33
+#define Motor4_dir 32
+
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 19; // 19
 const int LOADCELL_SCK_PIN = 21; // 21
@@ -52,9 +56,12 @@ int lastReading;
 unsigned long previousMotor1Time = millis();
 unsigned long previousMotor2Time = millis();
 unsigned long previousMotor3Time = millis();
-long Motor1Interval = 0.2;
+unsigned long previousMotor4Time = micros();
+
+long Motor1Interval = 1;
 long Motor2Interval = 5;
 long Motor3Interval = 1;
+long Motor4Interval = 1;
 
 // Colors
 #define TFT_GREY 0x5AEB
@@ -78,11 +85,10 @@ void loop2(void *parameter){
     unsigned long currentMotor1Time = millis();
     unsigned long currentMotor2Time = millis();
     unsigned long currentMotor3Time = millis();
+    unsigned long currentMotor4Time = millis();
     Motor1Interval = motorRPM[0];
     Motor2Interval = motorRPM[1];
-    //digitalWrite(Motor1_stp, LOW);
-    //digitalWrite(Motor2_stp, LOW);
-    //digitalWrite(Motor3_stp, LOW);
+
     if(motorEstatus[0]){
       digitalWrite(Motor1_stp, LOW);
       if(currentMotor1Time - previousMotor1Time > Motor1Interval){
@@ -102,6 +108,13 @@ void loop2(void *parameter){
       if(currentMotor3Time - previousMotor3Time > Motor3Interval){
         digitalWrite(Motor3_stp, HIGH);
         previousMotor3Time = currentMotor3Time;
+      }
+    }
+    if(motorEstatus[3]){
+      digitalWrite(Motor4_stp, LOW);
+      if(currentMotor4Time - previousMotor4Time > Motor4Interval){
+        digitalWrite(Motor4_stp, HIGH);
+        previousMotor4Time = currentMotor4Time;
       }
     }
     (fanEstatus) ? analogWrite(FAN, map(fanSetUp[1],0, 100,255,0)) : analogWrite(FAN, map(100,0, 100,0,255));
@@ -162,9 +175,14 @@ void setup()
   pinMode(Motor3_stp, OUTPUT);
   pinMode(Motor3_dir, OUTPUT);
 
+  pinMode(Motor4_stp, OUTPUT);
+  pinMode(Motor4_dir, OUTPUT);
+
   digitalWrite(Motor1_dir, LOW);
   digitalWrite(Motor2_dir, LOW); 
   digitalWrite(Motor3_dir, LOW);
+  digitalWrite(Motor4_dir, LOW);
+  
   // Initialize encoder pins
   pinMode(ENCODER_CLK, INPUT_PULLUP);
   pinMode(ENCODER_DT, INPUT_PULLUP);
