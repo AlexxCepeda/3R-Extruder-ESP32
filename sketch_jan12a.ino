@@ -53,13 +53,13 @@ int lastReading;
 #define CALIBRATION_FACTOR 2102.054
 
 //Set up timing for motors
-unsigned long previousMotor1Time = millis();
-unsigned long previousMotor2Time = millis();
-unsigned long previousMotor3Time = millis();
+unsigned long previousMotor1Time = micros();
+unsigned long previousMotor2Time = micros();
+unsigned long previousMotor3Time = micros();
 unsigned long previousMotor4Time = micros();
 
 long Motor1Interval = 1;
-long Motor2Interval = 5;
+long Motor2Interval = 1;
 long Motor3Interval = 1;
 long Motor4Interval = 1;
 
@@ -82,10 +82,10 @@ bool fanEstatus = false;
 
 void loop2(void *parameter){
   for(;;){
-    unsigned long currentMotor1Time = millis();
-    unsigned long currentMotor2Time = millis();
-    unsigned long currentMotor3Time = millis();
-    unsigned long currentMotor4Time = millis();
+    unsigned long currentMotor1Time = micros();
+    unsigned long currentMotor2Time = micros();
+    unsigned long currentMotor3Time = micros();
+    unsigned long currentMotor4Time = micros();
     Motor1Interval = motorRPM[0];
     Motor2Interval = motorRPM[1];
 
@@ -187,6 +187,7 @@ void setup()
   pinMode(ENCODER_CLK, INPUT_PULLUP);
   pinMode(ENCODER_DT, INPUT_PULLUP);
   pinMode(ENCODER_SW, INPUT_PULLUP);
+  
   // Initialize interrupt for encoder
   attachInterrupt(ENCODER_DT, readEncoder, FALLING);
 
@@ -314,12 +315,10 @@ void motorVariablesRota(int motor){
                 case 0:
                   tft.setCursor(60,145);
                   tft.print("  Horario  ");
-                  //motorDirection[motor] = 0;
                   break;
                 case 1:
                   tft.setCursor(60,145);
                   tft.print("Antihorario");
-                  //motorDirection[motor] = 1;
                   break;
               }
               if(!digitalRead(ENCODER_SW)){
