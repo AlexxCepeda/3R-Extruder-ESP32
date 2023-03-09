@@ -2,6 +2,7 @@
 
 // https://www.laboratoriogluon.com/controlar-mosfets-de-potencia-irfz44n-con-3-3v/ configuracion para ventiladores
 // https://randomnerdtutorials.com/esp32-load-cell-hx711/ celda de carga
+// https://randomnerdtutorials.com/esp32-dc-motor-l298n-motor-driver-control-speed-direction/
 
 #include <SPI.h>
 #include <TFT_eSPI.h>
@@ -22,6 +23,12 @@ Preferences preferences;
 
 // Pin para ventilador 
 #define FAN 5
+
+// Setting PWM properties
+const int freq = 30000;
+const int pwmChannel = 0;
+const int resolution = 8;
+int dutyCycle = 0;
 
 // Pins para motores
 
@@ -117,7 +124,9 @@ void loop2(void *parameter){
         previousMotor4Time = currentMotor4Time;
       }
     }
-    (fanEstatus) ? analogWrite(FAN, map(fanSetUp[1],0, 100,255,0)) : analogWrite(FAN, map(100,0, 100,0,255));
+    //(fanEstatus) ? ledcWrite(pwmChannel, map(fanSetUp[1],0, 100,50,255)) : ledcWrite(pwmChannel,0);
+    //if(fanEstatus == true) ledcWrite(pwmChannel, 255);
+    (fanEstatus) ? ledcWrite(pwmChannel, map(fanSetUp[1],0,100,50,255)) :  analogWrite(FAN, 0);
     delay(1);
   }
   vTaskDelay(10);
@@ -163,8 +172,8 @@ void setup()
 
   fanSetUp[1] = preferences.getInt("porc",0); //porcentaje de ventilacion
   
-  pinMode(FAN,OUTPUT);
-  digitalWrite(FAN,HIGH);
+  ledcSetup(pwmChannel, freq, resolution); // configure the PWM channel
+  ledcAttachPin(FAN, pwmChannel);
   
   pinMode(Motor1_stp, OUTPUT);
   pinMode(Motor1_dir, OUTPUT);
