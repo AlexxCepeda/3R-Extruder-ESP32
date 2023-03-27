@@ -3,6 +3,7 @@
 // https://www.laboratoriogluon.com/controlar-mosfets-de-potencia-irfz44n-con-3-3v/ configuracion para ventiladores
 // https://randomnerdtutorials.com/esp32-load-cell-hx711/ celda de carga
 // https://randomnerdtutorials.com/esp32-dc-motor-l298n-motor-driver-control-speed-direction/
+// http://www.esp32learning.com/code/esp32-and-a-pcf8574-expander-example.php
 
 #include <SPI.h>
 #include <TFT_eSPI.h>
@@ -50,7 +51,7 @@ int dutyCycle = 0;
 
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 19; // 19
-const int LOADCELL_SCK_PIN = 21; // 21
+const int LOADCELL_SCK_PIN = 3; // 21
 
 HX711 scale;
 int reading;
