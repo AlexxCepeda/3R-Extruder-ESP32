@@ -33,21 +33,23 @@ const int dutyCycle = 127;
 
 // Pines para motores
 
-// Define Pins for Motor 1
+// Define Pins for Motor 1 = auger motor
 #define Motor1_stp 13
 #define Motor1_dir 12
 const int augerChannel = 10;
 
-// Define Pins for Motor 2
+// Define Pins for Motor 2 = puller motor
 #define Motor2_stp 14
 #define Motor2_dir 27
 const int pullerChannel = 4;
 
-// Define Pins for Motor 3
+// Define Pins for Motor 3 = lineal motor
 #define Motor3_stp 26
 #define Motor3_dir 25
+const int linealChannel = 12;
+unsigned long previousMillis = 0;
 
-// Define Pins for Motor 4
+// Define Pins for Motor 4 = winder motor
 #define Motor4_stp 33
 #define Motor4_dir 32
 const int winderChannel = 6;
@@ -74,16 +76,28 @@ int linealSetUp[] = {0, 0};                         // {desplazamiento,velocidad
 int fanSetUp[] = {0, 0};                            // {estado, porcentaje} **ESTADO {0 APAGADO, 1 PRENDIDO}**
 bool imprimir = true;
 bool fanEstatus = false;
+int ledState = true;
 
 void loop2(void *parameter)
 {
   for (;;)
   {
+    unsigned long currentMillis = millis();
+    if (motorEstatus[2])
+    {
+      ledcWrite(linealChannel, dutyCycle);
+      if (currentMillis - previousMillis >= (linealSetUp[0] / linealSetUp[1]) * 1000)
+      {
+        previousMillis = currentMillis;
+        ledState = !ledState;
+        digitalWrite(Motor3_dir, ledState);
+      }
+    }
     (motorEstatus[0]) ? ledcWrite(augerChannel, dutyCycle) : analogWrite(Motor1_stp, 0);
     (motorEstatus[1]) ? ledcWrite(pullerChannel, dutyCycle) : analogWrite(Motor2_stp, 0);
     (motorEstatus[3]) ? ledcWrite(winderChannel, dutyCycle) : analogWrite(Motor4_stp, 0);
     (fanEstatus) ? ledcWrite(fanChannel, map(fanSetUp[1], 0, 100, 100, 240)) : analogWrite(FAN, 0);
-    delay(15);
+    delay(10);
   }
   vTaskDelay(10);
 }
@@ -134,13 +148,17 @@ void setup()
   ledcSetup(fanChannel, freq, resolution); // configure the PWM channel
   ledcAttachPin(FAN, fanChannel);
 
-  // pwmSetUp for Auger motor
+  // pwmSetUp for auger motor
   ledcSetup(augerChannel, ((360 * motorRPM[0]) / (0.9 * 60)) * 15.3, resolution);
   ledcAttachPin(Motor1_stp, augerChannel);
 
   // pwmSetUp for puller motor
   ledcSetup(pullerChannel, (360 * motorRPM[1]) / (0.9 * 60), resolution);
   ledcAttachPin(Motor2_stp, pullerChannel);
+
+  // pwmSetUp for lineal motor
+  ledcSetup(linealChannel, 400 * linealSetUp[1] * 0.125, resolution);
+  ledcAttachPin(Motor3_stp, linealChannel);
 
   // pwmSetUp for winder motor
   ledcSetup(winderChannel, ((360 * motorRPM[3]) / (0.9 * 60)) * 5.1818, resolution);
@@ -153,6 +171,7 @@ void setup()
 
   (!motorDirection[0]) ? digitalWrite(Motor1_dir, HIGH) : digitalWrite(Motor1_dir, LOW);
   (!motorDirection[1]) ? digitalWrite(Motor2_dir, HIGH) : digitalWrite(Motor2_dir, LOW);
+  digitalWrite(Motor3_dir, OUTPUT);
   (!motorDirection[3]) ? digitalWrite(Motor4_dir, HIGH) : digitalWrite(Motor4_dir, LOW);
 
   // Initialize encoder pins
@@ -450,6 +469,7 @@ void motorLineal()
             tft.print(" ");
             if (!digitalRead(ENCODER_SW))
             {
+              ledcSetup(linealChannel, 400 * linealSetUp[1] * 0.125, resolution);
               delay(100);
               counter = 2;
               break;
