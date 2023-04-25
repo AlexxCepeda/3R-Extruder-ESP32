@@ -1,10 +1,3 @@
-// Notas
-
-// https://www.laboratoriogluon.com/controlar-mosfets-de-potencia-irfz44n-con-3-3v/ configuracion para ventiladores
-// https://randomnerdtutorials.com/esp32-load-cell-hx711/ celda de carga
-// https://randomnerdtutorials.com/esp32-dc-motor-l298n-motor-driver-control-speed-direction/
-// http://www.esp32learning.com/code/esp32-and-a-pcf8574-expander-example.php
-
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <analogWrite.h>
@@ -34,29 +27,34 @@ const int dutyCycle = 127;
 // Pines para motores
 
 // Define Pins for Motor 1 = auger motor
-#define Motor1_stp 13
-#define Motor1_dir 12
+#define Motor1_stp 12
+#define Motor1_dir 14
+#define Motor1_en 13
 const int augerChannel = 10;
 
 // Define Pins for Motor 2 = puller motor
-#define Motor2_stp 14
-#define Motor2_dir 27
+#define Motor2_stp 26
+#define Motor2_dir 25
+#define Motor2_en 27
 const int pullerChannel = 4;
 
 // Define Pins for Motor 3 = lineal motor
-#define Motor3_stp 26
-#define Motor3_dir 25
+#define Motor3_stp 32
+#define Motor3_dir 19
+#define Motor3_en 33
 const int linealChannel = 12;
 unsigned long previousMillis = 0;
+int pinInterrupcion = 34;
 
 // Define Pins for Motor 4 = winder motor
-#define Motor4_stp 33
-#define Motor4_dir 32
+#define Motor4_stp 1
+#define Motor4_dir 22
+#define Motor4_en 21
 const int winderChannel = 6;
 
 // HX711 circuit wiring
-const int LOADCELL_DOUT_PIN = 19; // 19
-const int LOADCELL_SCK_PIN = 3;   // 21
+const int LOADCELL_DOUT_PIN = 35; // 19
+const int LOADCELL_SCK_PIN = 3;   // 3
 
 HX711 scale;
 int reading;
@@ -77,14 +75,21 @@ int fanSetUp[] = {0, 0};                            // {estado, porcentaje} **ES
 bool imprimir = true;
 bool fanEstatus = false;
 int ledState = true;
+byte enableMotors;
+
+void IRAM_ATTR cambiarDireccion()
+{
+  ledState = !ledState;
+  digitalWrite(Motor3_dir, ledState);
+}
 
 void loop2(void *parameter)
 {
   for (;;)
   {
-    unsigned long currentMillis = millis();
     if (motorEstatus[2])
     {
+      unsigned long currentMillis = millis();
       ledcWrite(linealChannel, dutyCycle);
       if (currentMillis - previousMillis >= (linealSetUp[0] / linealSetUp[1]) * 1000)
       {
@@ -132,9 +137,9 @@ void setup()
   motorDirection[3] = preferences.getInt("direccion4", 0);
 
   // Obtenemos los valores de RPM deseadas guardados en EEPROM
-  motorRPM[0] = preferences.getInt("RPM0", 0);
-  motorRPM[1] = preferences.getInt("RPM1", 0);
-  motorRPM[3] = preferences.getInt("RPM3", 0);
+  motorRPM[0] = preferences.getInt("RPM0", 0); // Auger
+  motorRPM[1] = preferences.getInt("RPM1", 0); // Puller
+  motorRPM[3] = preferences.getInt("RPM3", 0); // Winder
 
   // Obtenemos los valores para el movimiento lineal
   linealSetUp[0] = preferences.getInt("desp", 0);    // distancia de desplazamiento
@@ -164,14 +169,20 @@ void setup()
   ledcSetup(winderChannel, ((360 * motorRPM[3]) / (0.9 * 60)) * 5.1818, resolution);
   ledcAttachPin(Motor4_stp, winderChannel);
 
+  pinMode(pinInterrupcion, INPUT);
   pinMode(Motor1_dir, OUTPUT);
   pinMode(Motor2_dir, OUTPUT);
   pinMode(Motor3_dir, OUTPUT);
   pinMode(Motor4_dir, OUTPUT);
+  pinMode(Motor1_en, OUTPUT);
+  pinMode(Motor2_en, OUTPUT);
+  pinMode(Motor3_en, OUTPUT);
+  pinMode(Motor4_en, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(pinInterrupcion), cambiarDireccion, RISING);
 
   (!motorDirection[0]) ? digitalWrite(Motor1_dir, HIGH) : digitalWrite(Motor1_dir, LOW);
   (!motorDirection[1]) ? digitalWrite(Motor2_dir, HIGH) : digitalWrite(Motor2_dir, LOW);
-  digitalWrite(Motor3_dir, OUTPUT);
+  digitalWrite(Motor3_dir, ledState);
   (!motorDirection[3]) ? digitalWrite(Motor4_dir, HIGH) : digitalWrite(Motor4_dir, LOW);
 
   // Initialize encoder pins
@@ -872,13 +883,25 @@ void loop()
           break;
         }
         if (getCounter() == 1)
+        {
           motorEstatus[0] = !motorEstatus[0];
+          (motorEstatus[0]) ? digitalWrite(Motor1_en, LOW) : digitalWrite(Motor1_en, HIGH);
+        }
         if (getCounter() == 2)
+        {
           motorEstatus[1] = !motorEstatus[1];
+          (motorEstatus[1]) ? digitalWrite(Motor2_en, LOW) : digitalWrite(Motor2_en, HIGH);
+        }
         if (getCounter() == 3)
+        {
           motorEstatus[2] = !motorEstatus[2];
+          (motorEstatus[2]) ? digitalWrite(Motor3_en, LOW) : digitalWrite(Motor3_en, HIGH);
+        }
         if (getCounter() == 4)
+        {
           motorEstatus[3] = !motorEstatus[3];
+          (motorEstatus[3]) ? digitalWrite(Motor4_en, LOW) : digitalWrite(Motor4_en, HIGH);
+        }
         if (getCounter() == 5)
           fanEstatus = !fanEstatus;
         if (getCounter() == 6)
