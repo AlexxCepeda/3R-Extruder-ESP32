@@ -178,6 +178,10 @@ void setup()
   pinMode(Motor2_en, OUTPUT);
   pinMode(Motor3_en, OUTPUT);
   pinMode(Motor4_en, OUTPUT);
+  digitalWrite(Motor1_en, HIGH);
+  digitalWrite(Motor2_en, HIGH);
+  digitalWrite(Motor3_en, HIGH);
+  digitalWrite(Motor4_en, HIGH);
   attachInterrupt(digitalPinToInterrupt(pinInterrupcion), cambiarDireccion, RISING);
 
   (!motorDirection[0]) ? digitalWrite(Motor1_dir, HIGH) : digitalWrite(Motor1_dir, LOW);
